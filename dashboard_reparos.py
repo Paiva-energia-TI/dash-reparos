@@ -156,6 +156,46 @@ with aba[1]:
     fig_timeline.update_layout(title="Linha do Tempo - Chegadas vs Reparos", xaxis_title="Mês/Ano", yaxis_title="Quantidade")
 
     st.plotly_chart(fig_timeline, use_container_width=True)
+    st.subheader("📈 Linha do Tempo - Fluxo por Serial")
+
+    df_timeline = df_filtered.copy()
+
+    # Criar dataset no formato Gantt: cada SERIAL vira uma "tarefa"
+    df_gantt = df_timeline[["SERIAL", "PLACA", "DATA DE CHEGADA", "DATA DE REPARO", "ENTREGA/PREVISÃO"]].copy()
+
+    # Criar colunas para início e fim do período de reparo
+    df_gantt = df_gantt.rename(columns={
+        "DATA DE CHEGADA": "Inicio",
+        "DATA DE REPARO": "Fim"
+    })
+
+    # Caso não tenha reparo, usa previsão de entrega como "Fim" (se existir)
+    df_gantt["Fim"] = df_gantt["Fim"].fillna(df_gantt["ENTREGA/PREVISÃO"])
+
+    # Tirar registros sem data válida
+    df_gantt = df_gantt.dropna(subset=["Inicio", "Fim"])
+
+    # Construir gráfico de linha do tempo (Gantt)
+    fig_timeline = px.timeline(
+        df_gantt,
+        x_start="Inicio",
+        x_end="Fim",
+        y="SERIAL",          # <<< agora é por SERIAL
+        color="PLACA",       # cor pode ser por placa (ou trocar por cliente/status, se preferir)
+        hover_data=["PLACA"], # mostra a placa no hover
+        title="Linha do Tempo por Serial"
+    )
+
+    # Ajustar layout
+    fig_timeline.update_yaxes(autorange="reversed")  # Serials de cima para baixo
+    fig_timeline.update_layout(
+        xaxis_title="Data",
+        yaxis_title="Serial",
+        showlegend=True
+    )
+
+    st.plotly_chart(fig_timeline, use_container_width=True)
+
 
 with aba[2]:
     st.subheader("📋 Tabela Detalhada")
