@@ -109,7 +109,7 @@ else:
 col1, col2, col3, col4, col5 = st.columns(5)
 
 with col1:
-    st.markdown(f"<div class='metric-card'>📦<br>Total<br>{len(df_filtered)}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='metric-card'>📦<br>Total de placas<br>{len(df_filtered)}</div>", unsafe_allow_html=True)
 with col2:
     st.markdown(f"<div class='metric-card'>✅<br>Concluídos<br>{(df_filtered['Status']=='Reparada').sum()}</div>", unsafe_allow_html=True)
 with col3:
