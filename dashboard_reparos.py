@@ -39,7 +39,7 @@ st.markdown(
 # =========================
 # Carregar os dados
 # =========================
-df = pd.read_excel("../Reparos Paiva.xlsx", sheet_name="Reparos Paiva")
+df = pd.read_excel("Reparos Paiva.xlsx", sheet_name="Reparos Paiva")
 
 # Selecionar colunas principais
 df = df[[
