@@ -93,38 +93,53 @@ df["DIAS_REPARO"] = (df["DATA DE REPARO"] - df["DATA DE CHEGADA"]).dt.days
 # =========================
 # Sidebar - Filtros
 # =========================
+# =========================
+# Sidebar - Filtros
+# =========================
 st.sidebar.image(
-    "assets/logo-colorida.png",  # caminho da sua logo
-    use_container_width=True  # ajusta automaticamente ao tamanho do sidebar
+    "assets/logo-colorida.png",
+    use_container_width=True
 )
 
 st.sidebar.title("🔎 Filtros")
 
-serial = st.sidebar.multiselect("Serial", options=df["SERIAL"].unique())
-placas = st.sidebar.multiselect("Placa", options=df["PLACA"].unique())
-status = st.sidebar.multiselect("Status", options=df["Status"].unique())
-prioridade = st.sidebar.multiselect("Prioridade", options=df["Prioridade"].dropna().unique())
-cliente = st.sidebar.multiselect("Cliente", options=df["CLIENTE"].dropna().unique())
+# --- Filtro Cliente ---
+clientes = df["CLIENTE"].dropna().unique()
+cliente_sel = st.sidebar.multiselect("Cliente", options=clientes)
 
-df_filtered = df.copy()
-if serial:
-    df_filtered = df_filtered[df_filtered["SERIAL"].isin(serial)]
-if placas:
-    df_filtered = df_filtered[df_filtered["PLACA"].isin(placas)]
-if status:
-    df_filtered = df_filtered[df_filtered["Status"].isin(status)]
-if prioridade:
-    df_filtered = df_filtered[df_filtered["Prioridade"].isin(prioridade)]
-if cliente:
-    df_filtered = df_filtered[df_filtered["CLIENTE"].isin(cliente)]
+df_cliente = df[df["CLIENTE"].isin(cliente_sel)] if cliente_sel else df
 
+# --- Filtro Placa (dependente de Cliente) ---
+placas = df_cliente["PLACA"].dropna().unique()
+placa_sel = st.sidebar.multiselect("Placa", options=placas)
+
+df_placa = df_cliente[df_cliente["PLACA"].isin(placa_sel)] if placa_sel else df_cliente
+
+# --- Filtro Serial (dependente de Cliente + Placa) ---
+seriais = df_placa["SERIAL"].dropna().unique()
+serial_sel = st.sidebar.multiselect("Serial", options=seriais)
+
+df_serial = df_placa[df_placa["SERIAL"].isin(serial_sel)] if serial_sel else df_placa
+
+# --- Filtro Prioridade (dependente dos anteriores) ---
+prioridades = df_serial["Prioridade"].dropna().unique()
+prioridade_sel = st.sidebar.multiselect("Prioridade", options=prioridades)
+
+df_prioridade = df_serial[df_serial["Prioridade"].isin(prioridade_sel)] if prioridade_sel else df_serial
+
+# --- Filtro Status (dependente dos anteriores) ---
+status_opts = df_prioridade["Status"].dropna().unique()
+status_sel = st.sidebar.multiselect("Status", options=status_opts)
+
+df_filtered = df_prioridade[df_prioridade["Status"].isin(status_sel)] if status_sel else df_prioridade
+
+# --- Filtro Data ---
 date_range = st.sidebar.date_input(
     "Período de chegada",
-    value=[df["DATA DE CHEGADA"].min().date(), df["DATA DE CHEGADA"].max().date()],
-    help="Selecione o intervalo de datas para filtrar as placas"
+    value=[df["DATA DE CHEGADA"].min().date(), pd.Timestamp.today().date()],
+    help="Selecione o intervalo de datas"
 )
 
-# Tratar quando só uma data for selecionada (evita erro)
 if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
     data_inicio, data_fim = date_range
     df_filtered = df_filtered[
@@ -133,6 +148,7 @@ if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
     ]
 else:
     st.info("🗓️ Selecione a data inicial e final para aplicar o filtro.")
+
 
 # =========================
 # KPIs
