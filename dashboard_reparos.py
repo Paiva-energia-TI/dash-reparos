@@ -75,7 +75,7 @@ print(df.head())
 # Selecionar colunas principais
 df = df[[
     "SEQ", "PLACA", "VERSÃO", "SERIAL", "Prioridade",
-    "DATA DE CHEGADA", "DATA DE REPARO", "ENTREGA/PREVISÃO", "CLIENTE", "Status"
+    "DATA DE CHEGADA", "DATA DE REPARO", "ENTREGA/PREVISÃO", "CLIENTE", "Status", "FOLLOW-UP", "Entrega"
 ]].copy()
 
 # Converter datas
@@ -87,8 +87,6 @@ for col in ["DATA DE CHEGADA", "DATA DE REPARO", "ENTREGA/PREVISÃO"]:
 #     lambda x: "Concluído" if pd.notnull(x) else "Em andamento"
 # )
 
-# Calcular dias de reparo
-df["DIAS_REPARO"] = (df["DATA DE REPARO"] - df["DATA DE CHEGADA"]).dt.days
 
 # =========================
 # Sidebar - Filtros
@@ -130,7 +128,18 @@ status_opts.sort()  # opcional, para deixar em ordem alfabética
 
 status_sel = st.sidebar.multiselect("Status", options=status_opts)
 
-df_filtered = df_prioridade[df_prioridade["Status"].isin(status_sel)] if status_sel else df_prioridade
+# --- Filtro de Entrega ---
+
+entrega_opts = df_prioridade["Entrega"].dropna().astype(str).str.strip().unique().tolist()
+entrega_opts.sort()
+entrega_sel = st.sidebar.multiselect("Entrega", options=entrega_opts)
+
+# Filtro Status
+df_status = df_prioridade[df_prioridade["Status"].isin(status_sel)] if status_sel else df_prioridade
+
+# Filtro Entrega
+df_filtered = df_status[df_status["Entrega"].isin(entrega_sel)] if entrega_sel else df_status
+
 
 # --- Filtro Data ---
 date_range = st.sidebar.date_input(
@@ -152,18 +161,21 @@ else:
 # =========================
 # KPIs
 # =========================
-col1, col2, col3, col4, col5 = st.columns(5)
+col1, col2, col3, col4, col5, col6 = st.columns(6)
 
 with col1:
-    st.markdown(f"<div class='metric-card'>📦<br>Total de placas<br>{len(df_filtered)}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='metric-card'>📦<br>Total de recebidos<br>{len(df_filtered)}</div>", unsafe_allow_html=True)
 with col2:
-    st.markdown(f"<div class='metric-card'>✅<br>Concluídos<br>{(df_filtered['Status']=='Reparada').sum()}</div>", unsafe_allow_html=True)
+    total_seriais = df_filtered["SERIAL"].nunique()
+    st.markdown(f"<div class='metric-card'>📱<br>Seriais<br>{total_seriais}</div>", unsafe_allow_html=True)
 with col3:
-    st.markdown(f"<div class='metric-card'>↩️<br>Retorno<br>{(df_filtered['Status']=='Retorno').sum()}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='metric-card'>✅<br>Concluídos<br>{(df_filtered['Status']=='Reparada').sum()}</div>", unsafe_allow_html=True)
 with col4:
-    st.markdown(f"<div class='metric-card'>🔄<br>Em andamento<br>{(df_filtered['Status']=='Analisando').sum()}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='metric-card'>↩️<br>Retorno<br>{(df_filtered['Status']=='Retorno').sum()}</div>", unsafe_allow_html=True)
 with col5:
-    st.markdown(f"<div class='metric-card'>⏱️<br>Tempo Médio<br>{round(df_filtered['DIAS_REPARO'].mean(skipna=True),1)} dias</div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='metric-card'>🔄<br>Em andamento<br>{(df_filtered['Status']=='Analisando').sum()}</div>", unsafe_allow_html=True)
+with col6:
+    st.markdown(f"<div class='metric-card'>❌<br>Sem reparo<br>{round(df_filtered['Status']=='Sem Reparo').sum()}</div>", unsafe_allow_html=True)
 
 st.markdown("---")
 
