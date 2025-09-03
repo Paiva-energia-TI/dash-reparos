@@ -93,9 +93,6 @@ df["DIAS_REPARO"] = (df["DATA DE REPARO"] - df["DATA DE CHEGADA"]).dt.days
 # =========================
 # Sidebar - Filtros
 # =========================
-# =========================
-# Sidebar - Filtros
-# =========================
 st.sidebar.image(
     "assets/logo-colorida.png",
     use_container_width=True
@@ -128,7 +125,9 @@ prioridade_sel = st.sidebar.multiselect("Prioridade", options=prioridades)
 df_prioridade = df_serial[df_serial["Prioridade"].isin(prioridade_sel)] if prioridade_sel else df_serial
 
 # --- Filtro Status (dependente dos anteriores) ---
-status_opts = df_prioridade["Status"].dropna().unique()
+status_opts = df_prioridade["Status"].dropna().astype(str).str.strip().unique().tolist()
+status_opts.sort()  # opcional, para deixar em ordem alfabética
+
 status_sel = st.sidebar.multiselect("Status", options=status_opts)
 
 df_filtered = df_prioridade[df_prioridade["Status"].isin(status_sel)] if status_sel else df_prioridade
@@ -251,6 +250,11 @@ with aba[2]:
     df_display = df_filtered.copy()
     for col in ["DATA DE CHEGADA", "DATA DE REPARO", "ENTREGA/PREVISÃO"]:
         df_display[col] = df_display[col].dt.strftime("%d/%m/%Y")
+
+    # Reordenar colunas (jogar "DATA DE REPARO" e "ENTREGA/PREVISÃO" para o final)
+    cols = [c for c in df_display.columns if c not in ["DATA DE REPARO", "ENTREGA/PREVISÃO"]]
+    cols += ["DATA DE REPARO", "ENTREGA/PREVISÃO"]
+    df_display = df_display[cols]
 
     st.dataframe(df_display, use_container_width=True)
 
