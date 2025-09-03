@@ -4,3 +4,4 @@ pandas
 openpyxl
 load_dotenv
 office365-rest-python-client
+office365
