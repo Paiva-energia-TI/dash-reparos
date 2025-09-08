@@ -1,11 +1,10 @@
+import os
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from office365.sharepoint.client_context import ClientContext
-from office365.sharepoint.files.file import File
-from office365.runtime.auth.user_credential import UserCredential
-import os
+from office365.runtime.auth.client_credential import ClientCredential
 from io import BytesIO
 from dotenv import load_dotenv
 
@@ -43,27 +42,32 @@ st.markdown(
 )
 
 # =========================
-# Login Sharepoint
+# Login SharePoint
 # =========================
-# Carregar .env
 load_dotenv()
 
-USERNAME = os.getenv("SP_USERNAME")
-PASSWORD = os.getenv("SP_PASSWORD")
-SITE_URL = "https://paivaenergiapaivaenergia150.sharepoint.com/sites/paivaenergiaadministrativo"
-FILE_URL = "/sites/paivaenergiaadministrativo/Engenharia/Reparos/Reparos Paiva.xlsx"
+tenant_id = os.getenv("TENANT_ID")
+client_id = os.getenv("CLIENT_ID")
+client_secret = os.getenv("CLIENT_SECRET")
+SITE_URL = os.getenv("SITE_URL")
+FILE_URL = os.getenv("FILE_URL")  # URL relativa no SharePoint, ex: /sites/.../arquivo.xlsx
 
-# Conectar ao SharePoint
-ctx = ClientContext(SITE_URL).with_credentials(UserCredential(USERNAME, PASSWORD))
+# Criar credenciais
+credentials = ClientCredential(client_id, client_secret)
+ctx = ClientContext(SITE_URL).with_credentials(credentials)
 
-# Baixar arquivo do SharePoint
+# =========================
+# Baixar arquivo do SharePoint para memória
+# =========================
 file = ctx.web.get_file_by_server_relative_url(FILE_URL)
-ctx.load(file)
-ctx.execute_query()
 
-# Ler conteúdo em memória
-content = file.read()
-df = pd.read_excel(BytesIO(content), sheet_name="Reparos Paiva")
+# Criar buffer em memória
+file_content = BytesIO()
+file.download(file_content).execute_query()
+file_content.seek(0)
+
+# Ler Excel diretamente da memória
+df = pd.read_excel(file_content, sheet_name="Reparos Paiva")
 
 print(df.head())
 
