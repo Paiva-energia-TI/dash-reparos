@@ -34,6 +34,12 @@ authenticator = stauth.Authenticate(
     config['cookie']['expiry_days']
 )
 
+# Login seguro sem erro de múltiplos argumentos
+try:
+    authenticator.login()
+except Exception as e:
+    st.error(e)
+
 # Verifica status de autenticação
 if st.session_state.get('authentication_status'):
     st.sidebar.success(f"Bem-vindo, {st.session_state.get('name')} 👋")
