@@ -35,7 +35,10 @@ authenticator = stauth.Authenticate(
 )
 
 # Login seguro sem erro de múltiplos argumentos
-name, authentication_status, username = authenticator.login("Login", "main")
+name, authentication_status, username = authenticator.login(
+    "Login",
+    location="main"
+)
 
 # Verifica status de autenticação
 if st.session_state.get('authentication_status'):
