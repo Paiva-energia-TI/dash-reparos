@@ -15,17 +15,7 @@ from dotenv import load_dotenv
 # =========================
 config = st.secrets
 
-credentials = {
-    "usernames": {
-        username: {
-            "name": f"{info['first_name']} {info['last_name']}",
-            "email": info["email"],
-            "password": info["password"],
-            "role": info.get("role", "")
-        }
-        for username, info in config["credentials"]["usernames"].items()
-    }
-}
+credentials = copy.deepcopy(st.secrets["credentials"])
 
 authenticator = stauth.Authenticate(
     credentials,
