@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 config = st.secrets
 
 # Pega o dicionário de credentials do Secrets e transforma em dict normal
-credentials = copy.deepcopy(st.secrets["credentials"])
+credentials = dict(st.secrets["credentials"])
 
 authenticator = stauth.Authenticate(
     credentials,
@@ -26,10 +26,7 @@ authenticator = stauth.Authenticate(
 )
 
 # Login seguro sem erro de múltiplos argumentos
-try:
-    authenticator.login()
-except Exception as e:
-    st.error(e)
+name, authentication_status, username = authenticator.login("Login", "main")
 
 # Verifica status de autenticação
 if st.session_state.get('authentication_status'):
