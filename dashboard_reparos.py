@@ -15,8 +15,17 @@ from dotenv import load_dotenv
 # =========================
 config = st.secrets
 
-# Pega o dicionário de credentials do Secrets e transforma em dict normal
-credentials = dict(st.secrets["credentials"])
+credentials = {
+    "usernames": {
+        username: {
+            "name": f"{info['first_name']} {info['last_name']}",
+            "email": info["email"],
+            "password": info["password"],
+            "role": info.get("role", "")
+        }
+        for username, info in st.secrets["credentials"]["usernames"].items()
+    }
+}
 
 authenticator = stauth.Authenticate(
     credentials,
