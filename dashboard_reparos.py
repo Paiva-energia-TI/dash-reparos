@@ -189,12 +189,17 @@ if st.session_state.get('authentication_status'):
     # --- 🔹 Novo Filtro Data de Entrega ---
     date_range_entrega = st.sidebar.date_input(
         "Período de entrega",
-        value=[
-            df_filtered["ENTREGA/PREVISÃO"].min().date() if not df_filtered["ENTREGA/PREVISÃO"].dropna().empty,
-            df_filtered["ENTREGA/PREVISÃO"].max().date() if not df_filtered["ENTREGA/PREVISÃO"].dropna().empty
-        ],
+        value=[],  # começa vazio
         help="Selecione o intervalo de datas de entrega"
     )
+
+    # Aplica o filtro só se o usuário escolheu algo
+    if date_range_entrega:
+        start_date, end_date = date_range_entrega
+        df_filtered = df_filtered[
+            (df_filtered["ENTREGA/PREVISÃO"].dt.date >= start_date) &
+            (df_filtered["ENTREGA/PREVISÃO"].dt.date <= end_date)
+        ]
 
     if isinstance(date_range_entrega, (list, tuple)) and len(date_range_entrega) == 2:
         data_inicio_entrega, data_fim_entrega = date_range_entrega
