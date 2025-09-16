@@ -14,8 +14,11 @@ from dotenv import load_dotenv
 # =========================
 config = st.secrets
 
+# Pega o dicionário de credentials do Secrets e transforma em dict normal
+credentials = copy.deepcopy(st.secrets["credentials"])
+
 authenticator = stauth.Authenticate(
-    config['credentials'],
+    credentials,
     config['cookie']['name'],
     config['cookie']['key'],
     config['cookie']['expiry_days']
