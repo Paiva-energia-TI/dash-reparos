@@ -23,7 +23,7 @@ credentials = {
             "password": info["password"],
             "role": info.get("role", "")
         }
-        for username, info in st.secrets["credentials"]["usernames"].items()
+        for username, info in config["credentials"]["usernames"].items()
     }
 }
 
