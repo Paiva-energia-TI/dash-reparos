@@ -4,8 +4,6 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 import streamlit_authenticator as stauth
-import yaml
-from yaml.loader import SafeLoader
 from office365.sharepoint.client_context import ClientContext
 from office365.runtime.auth.client_credential import ClientCredential
 from io import BytesIO
