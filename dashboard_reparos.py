@@ -15,7 +15,17 @@ from dotenv import load_dotenv
 # =========================
 config = st.secrets
 
-credentials = copy.deepcopy(st.secrets["credentials"])
+credentials = {
+    "usernames": {
+        username: {
+            "name": f"{info['first_name']} {info['last_name']}",
+            "email": info['email'],
+            "password": info['password'],
+            "role": info['role']
+        }
+        for username, info in st.secrets["credentials"]["usernames"].items()
+    }
+}
 
 authenticator = stauth.Authenticate(
     credentials,
@@ -25,7 +35,7 @@ authenticator = stauth.Authenticate(
 )
 
 # Login seguro sem erro de múltiplos argumentos
-name, authentication_status, username = authenticator.login("Login")
+name, authentication_status, username = authenticator.login(name="Login", location="main")
 
 # Verifica status de autenticação
 if st.session_state.get('authentication_status'):
