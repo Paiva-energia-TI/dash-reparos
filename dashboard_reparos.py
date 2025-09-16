@@ -59,11 +59,11 @@ if st.session_state.get('authentication_status'):
     # =========================
     load_dotenv()
 
-    tenant_id = [sharepoint]["TENANT_ID"]
-    client_id = [sharepoint]["CLIENT_ID"]
-    client_secret = [sharepoint]["CLIENT_SECRET"]
-    SITE_URL = [sharepoint]["SITE_URL"]
-    FILE_URL = [sharepoint]["FILE_URL"]
+    tenant_id = st.secrets[sharepoint]["TENANT_ID"]
+    client_id = st.secrets[sharepoint]["CLIENT_ID"]
+    client_secret = st.secrets[sharepoint]["CLIENT_SECRET"]
+    SITE_URL = st.secrets[sharepoint]["SITE_URL"]
+    FILE_URL = st.secrets[sharepoint]["FILE_URL"]
 
     credentials = ClientCredential(client_id, client_secret)
     ctx = ClientContext(SITE_URL).with_credentials(credentials)
