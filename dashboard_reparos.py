@@ -190,8 +190,8 @@ if st.session_state.get('authentication_status'):
     date_range_entrega = st.sidebar.date_input(
         "Período de entrega",
         value=[
-            df_filtered["ENTREGA/PREVISÃO"].min().date() if not df_filtered["ENTREGA/PREVISÃO"].dropna().empty else pd.Timestamp.today().date(),
-            df_filtered["ENTREGA/PREVISÃO"].max().date() if not df_filtered["ENTREGA/PREVISÃO"].dropna().empty else pd.Timestamp.today().date()
+            df_filtered["ENTREGA/PREVISÃO"].min().date() if not df_filtered["ENTREGA/PREVISÃO"].dropna().empty,
+            df_filtered["ENTREGA/PREVISÃO"].max().date() if not df_filtered["ENTREGA/PREVISÃO"].dropna().empty
         ],
         help="Selecione o intervalo de datas de entrega"
     )
