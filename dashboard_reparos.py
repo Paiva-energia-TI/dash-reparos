@@ -88,7 +88,7 @@ if st.session_state.get('authentication_status'):
     df = df[[
         "SEQ", "PLACA", "VERSÃO", "SERIAL", "Prioridade",
         "DATA DE CHEGADA", "DATA DE REPARO", "ENTREGA/PREVISÃO",
-        "CLIENTE", "LOCAL", "Status", "FOLLOW-UP", "Entrega", "BM", "VALOR"
+        "CLIENTE", "LOCAL", "Status", "FOLLOW-UP","GARANTIA", "Entrega", "BM", "VALOR"
     ]].copy()
 
     for col in ["DATA DE CHEGADA", "DATA DE REPARO", "ENTREGA/PREVISÃO"]:
