@@ -275,7 +275,7 @@ if st.session_state.get('authentication_status'):
     with aba[2]:
         st.subheader("📋 Tabela Detalhada")
         df_display = df_filtered.copy()
-        for col in ["DATA DE CHEGADA", "DATA DE REPARO", "ENTREGA/PREVISÃO", "GARANTIA"]:
+        for col in ["DATA DE CHEGADA", "DATA DE REPARO", "ENTREGA/PREVISÃO"]:
             df_display[col] = df_display[col].dt.strftime("%d/%m/%Y")
         if "CLIENTE" in df_display.columns:
             df_display = df_display.drop(columns=["CLIENTE", "BM","VALOR"])
