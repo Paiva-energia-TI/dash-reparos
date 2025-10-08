@@ -10,7 +10,7 @@ from office365.runtime.auth.client_credential import ClientCredential
 from io import BytesIO
 from dotenv import load_dotenv
 
-# ========================= 
+# =========================
 # Autenticação
 # =========================
 config = st.secrets
