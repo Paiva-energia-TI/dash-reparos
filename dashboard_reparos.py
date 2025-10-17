@@ -275,20 +275,28 @@ if st.session_state.get('authentication_status'):
     with aba[2]:
         st.subheader("📋 Tabela Detalhada")
         df_display = df_filtered.copy()
-        for col in ["DATA DE CHEGADA", "DATA DE REPARO", "ENTREGA/PREVISÃO"]:
-            df_display[col] = df_display[col].dt.strftime("%d/%m/%Y")
+
+        # 🔹 Converte todas as colunas de data para o formato dd/mm/aaaa
+        for col in ["DATA DE CHEGADA", "DATA DE REPARO", "ENTREGA/PREVISÃO", "GARANTIA"]:
+            if col in df_display.columns:
+                df_display[col] = pd.to_datetime(df_display[col], errors="coerce").dt.strftime("%d/%m/%Y")
+
         if "CLIENTE" in df_display.columns:
-            df_display = df_display.drop(columns=["CLIENTE", "BM","VALOR"])
-        cols = [c for c in df_display.columns if c not in ["DATA DE REPARO", "ENTREGA/PREVISÃO"]]
-        cols += ["DATA DE REPARO", "ENTREGA/PREVISÃO"]
+            df_display = df_display.drop(columns=["CLIENTE", "BM", "VALOR"])
+
+        cols = [c for c in df_display.columns if c not in ["DATA DE REPARO", "ENTREGA/PREVISÃO", "GARANTIA"]]
+        cols += ["DATA DE REPARO", "ENTREGA/PREVISÃO", "GARANTIA"]
+
         df_display = df_display[cols]
         st.dataframe(df_display, use_container_width=True, hide_index=True)
+
         st.download_button(
             label="📥 Exportar dados filtrados",
             data=df_filtered.drop(columns=["CLIENTE"]).to_csv(index=False).encode("utf-8"),
             file_name="reparos_filtrados.csv",
             mime="text/csv"
         )
+
 
 
     # ------------------ Financeiro ------------------
