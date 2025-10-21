@@ -8,45 +8,88 @@ import streamlit_authenticator as stauth
 from office365.sharepoint.client_context import ClientContext
 from office365.runtime.auth.client_credential import ClientCredential
 from io import BytesIO
+from urllib.parse import quote
 from dotenv import load_dotenv
 
 # =========================
-# Autenticação
+# Carregar variáveis de ambiente locais
 # =========================
-config = st.secrets
+load_dotenv()
 
-credentials = {
-    "usernames": {
-        username: {
-            "name": f"{info['first_name']} {info['last_name']}",
-            "email": info['email'],
-            "password": info['password'],
-            "role": info['role']
+# =========================
+# Configuração de autenticação
+# =========================
+def get_credentials():
+    """
+    Retorna o dicionário de credenciais e cookie config
+    Funciona tanto no Streamlit Cloud quanto local.
+    """
+    try:
+        # Tenta usar st.secrets
+        creds = {
+            "usernames": {
+                username: {
+                    "name": f"{info['first_name']} {info['last_name']}",
+                    "email": info['email'],
+                    "password": info['password'],
+                    "role": info['role']
+                }
+                for username, info in st.secrets["credentials"]["usernames"].items()
+            }
         }
-        for username, info in st.secrets["credentials"]["usernames"].items()
-    }
-}
+        cookie_conf = st.secrets['cookie']
+        return creds, cookie_conf
+    except (AttributeError, KeyError, RuntimeError, st.errors.StreamlitSecretNotFoundError):
+        # Fallback local
+        creds = {
+            "usernames": {
+                os.getenv("USERNAME_LOCAL", "admin"): {
+                    "name": os.getenv("NAME_LOCAL", "Admin User"),
+                    "email": os.getenv("EMAIL_LOCAL", "admin@email.com"),
+                    "password": os.getenv("PASSWORD_LOCAL", "1234"),
+                    "role": os.getenv("ROLE_LOCAL", "PAIVA")
+                },
+                os.getenv("USERNAME_LOCAL2", "cpfl"): {
+                    "name": os.getenv("NAME_LOCAL2", "Cliente 1"),
+                    "email": os.getenv("EMAIL_LOCAL2", "cliente1@email.com"),
+                    "password": os.getenv("PASSWORD_LOCAL2", "1234"),
+                    "role": os.getenv("ROLE_LOCAL2", "CPFL")
+                }
+            }
+        }
+        cookie_conf = {
+            "name": os.getenv("COOKIE_NAME", "streamlit_dashboard"),
+            "key": os.getenv("COOKIE_KEY", "123456"),
+            "expiry_days": int(os.getenv("COOKIE_EXPIRY_DAYS", 30))
+        }
+        return creds, cookie_conf
+
+credentials_dict, cookie_config = get_credentials()
 
 authenticator = stauth.Authenticate(
-    credentials,
-    config['cookie']['name'],
-    config['cookie']['key'],
-    config['cookie']['expiry_days']
+    credentials_dict,
+    cookie_config['name'],
+    cookie_config['key'],
+    cookie_config['expiry_days']
 )
 
-# Login seguro sem erro de múltiplos argumentos
+# =========================
+# Login seguro
+# =========================
 try:
     authenticator.login()
 except Exception as e:
     st.error(e)
 
+# =========================
 # Verifica status de autenticação
+# =========================
 if st.session_state.get('authentication_status'):
     st.sidebar.success(f"Bem-vindo, {st.session_state.get('name')} 👋")
-    authenticator.logout("Sair",location='sidebar', key="logout_button")
+    authenticator.logout("Sair", location='sidebar', key="logout_button")
 
-    # 🔹 Recupera o role/cliente do usuário logado
-    cliente_atual = config["credentials"]["usernames"][st.session_state.get('username')].get("role")
+    usuario_logado = st.session_state.get('username')
+    cliente_atual = credentials_dict["usernames"][usuario_logado].get("role")
 
     # =========================
     # Configuração da Página
@@ -60,13 +103,20 @@ if st.session_state.get('authentication_status'):
     # =========================
     # Login SharePoint
     # =========================
-    load_dotenv()
+    def get_sharepoint_secrets():
+        try:
+            sp = st.secrets["sharepoint"]
+            return sp["TENANT_ID"], sp["CLIENT_ID"], sp["CLIENT_SECRET"], sp["SITE_URL"], sp["FILE_URL"]
+        except (AttributeError, KeyError, RuntimeError, st.errors.StreamlitSecretNotFoundError):
+            return (
+                os.getenv("TENANT_ID"),
+                os.getenv("CLIENT_ID"),
+                os.getenv("CLIENT_SECRET"),
+                os.getenv("SITE_URL"),
+                os.getenv("FILE_URL")
+            )
 
-    tenant_id = st.secrets["sharepoint"]["TENANT_ID"]
-    client_id = st.secrets["sharepoint"]["CLIENT_ID"]
-    client_secret = st.secrets["sharepoint"]["CLIENT_SECRET"]
-    SITE_URL = st.secrets["sharepoint"]["SITE_URL"]
-    FILE_URL = st.secrets["sharepoint"]["FILE_URL"]
+    tenant_id, client_id, client_secret, SITE_URL, FILE_URL = get_sharepoint_secrets()
 
     credentials = ClientCredential(client_id, client_secret)
     ctx = ClientContext(SITE_URL).with_credentials(credentials)
@@ -88,22 +138,22 @@ if st.session_state.get('authentication_status'):
     df = df[[
         "SEQ", "PLACA", "VERSÃO", "SERIAL", "Prioridade",
         "DATA DE CHEGADA", "DATA DE REPARO", "ENTREGA/PREVISÃO",
-        "CLIENTE", "LOCAL", "Status", "FOLLOW-UP","GARANTIA", "Entrega", "BM", "VALOR"
+        "CLIENTE", "LOCAL", "Status", "FOLLOW-UP","GARANTIA", 
+        "Entrega", "BM", "VALOR", "LINK RELATORIO"
     ]].copy()
+    
+    #------ Tratar link relatório
 
-    for col in ["DATA DE CHEGADA", "DATA DE REPARO", "ENTREGA/PREVISÃO"]:
+    #------ Abaixo é realizado o tratamento das datas --------
+    for col in ["DATA DE CHEGADA", "DATA DE REPARO", "ENTREGA/PREVISÃO", "GARANTIA"]:
         df[col] = pd.to_datetime(df[col], errors="coerce")
+    df["GARANTIA"] = df["GARANTIA"].dt.strftime("%d/%m/%Y")
 
-# =========================
-# Filtrar clientes
-# =========================
-    usuario_logado = st.session_state.get('username')
-    role_usuario = config["credentials"]["usernames"][usuario_logado].get("role")
+    role_usuario = cliente_atual
 
     # =========================
-    # A partir daqui segue o dashboard normalmente
+    # Dashboard e filtros
     # =========================
-
     st.markdown("""
     <style>
     .metric-card {
@@ -137,12 +187,13 @@ if st.session_state.get('authentication_status'):
         cliente_sel = st.sidebar.multiselect(
             "Cliente",
             options=todos_clientes,
-            default=todos_clientes  # seleciona todos por padrão
+            default=todos_clientes
         )
         df_cliente = df[df["CLIENTE"].isin(cliente_sel)]
     else:
         df_cliente = df[df["CLIENTE"].str.strip().eq(role_usuario)]
 
+    # Filtros adicionais
     placas = df_cliente["PLACA"].dropna().unique()
     placa_sel = st.sidebar.multiselect("Placa", options=placas)
     df_placa = df_cliente[df_cliente["PLACA"].isin(placa_sel)] if placa_sel else df_cliente
@@ -186,33 +237,29 @@ if st.session_state.get('authentication_status'):
         df_filtered = df_bm
         st.info("🗓️ Selecione a data inicial e final para aplicar o filtro.")
 
-    # --- 🔹 Novo Filtro Data de Entrega ---
+    # --- Filtro Data de Entrega ---
     date_range_entrega = st.sidebar.date_input(
         "Período de entrega",
-        value=[],  # começa vazio
+        value=[],
         help="Selecione o intervalo de datas de entrega"
     )
-
-    # Aplica o filtro só se o usuário escolheu algo
-    if date_range_entrega:
-        start_date, end_date = date_range_entrega
-        df_filtered = df_filtered[
-            (df_filtered["ENTREGA/PREVISÃO"].dt.date >= start_date) &
-            (df_filtered["ENTREGA/PREVISÃO"].dt.date <= end_date)
-        ]
-
     if isinstance(date_range_entrega, (list, tuple)) and len(date_range_entrega) == 2:
         data_inicio_entrega, data_fim_entrega = date_range_entrega
         df_filtered = df_filtered[
             (df_filtered["ENTREGA/PREVISÃO"].dt.date >= data_inicio_entrega) &
             (df_filtered["ENTREGA/PREVISÃO"].dt.date <= data_fim_entrega)
         ]
+    elif date_range_entrega:
+        start_date, end_date = date_range_entrega
+        df_filtered = df_filtered[
+            (df_filtered["ENTREGA/PREVISÃO"].dt.date >= start_date) &
+            (df_filtered["ENTREGA/PREVISÃO"].dt.date <= end_date)
+        ]
     else:
         st.info("🗓️ Selecione a data inicial e final para aplicar o filtro de entrega.")
 
-
     # =========================
-    # KPIs
+    # KPIs e Dashboard
     # =========================
     col1, col2, col3, col4, col5, col6 = st.columns(6)
     with col1:
@@ -272,24 +319,39 @@ if st.session_state.get('authentication_status'):
         fig_gantt.update_layout(xaxis_title="Data", yaxis_title="Serial", showlegend=True)
         st.plotly_chart(fig_gantt, use_container_width=True)
 
+
+    # =========================
+    # Usar a coluna LINK RELATORIO para gerar links
+    # =========================
+    df_filtered["Relatório de Reparo"] = df_filtered["LINK RELATORIO"]
+
     with aba[2]:
-        st.subheader("📋 Tabela Detalhada")
+        # Criar uma cópia para exibição
         df_display = df_filtered.copy()
+        for col in ["DATA DE CHEGADA", "DATA DE REPARO", "ENTREGA/PREVISÃO"]:
+            df_display[col] = df_display[col].dt.strftime("%d/%m/%Y")
 
-        # 🔹 Converte todas as colunas de data para o formato dd/mm/aaaa
-        for col in ["DATA DE CHEGADA", "DATA DE REPARO", "ENTREGA/PREVISÃO", "GARANTIA"]:
-            if col in df_display.columns:
-                df_display[col] = pd.to_datetime(df_display[col], errors="coerce").dt.strftime("%d/%m/%Y")
-
+        # Remover colunas desnecessárias
         if "CLIENTE" in df_display.columns:
-            df_display = df_display.drop(columns=["CLIENTE", "BM", "VALOR"])
+            df_display = df_display.drop(columns=["CLIENTE", "BM", "VALOR","LINK RELATORIO"])
 
-        cols = [c for c in df_display.columns if c not in ["DATA DE REPARO", "ENTREGA/PREVISÃO", "GARANTIA"]]
-        cols += ["DATA DE REPARO", "ENTREGA/PREVISÃO", "GARANTIA"]
-
+        # Reorganizar colunas
+        cols = [c for c in df_display.columns if c not in ["DATA DE REPARO", "ENTREGA/PREVISÃO"]]
+        cols += ["DATA DE REPARO", "ENTREGA/PREVISÃO"]
         df_display = df_display[cols]
-        st.dataframe(df_display, use_container_width=True, hide_index=True)
 
+        df_display["Relatório de Reparo"] = df_filtered["LINK RELATORIO"].apply(
+            lambda x: f'<a href="{x}" download="{x.split("/")[-1]}">{x.split("/")[-1]}</a>' 
+            if pd.notna(x) and x != "" else ""
+        )
+
+        # Converter o DataFrame em HTML com escape=False para interpretar HTML
+        html_table = df_display.to_html(escape=False, index=False)
+
+        st.markdown("### 📄 Relatórios de Reparo")
+        st.markdown(html_table, unsafe_allow_html=True)
+
+        # Botão de download do CSV
         st.download_button(
             label="📥 Exportar dados filtrados",
             data=df_filtered.drop(columns=["CLIENTE"]).to_csv(index=False).encode("utf-8"),
