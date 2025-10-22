@@ -341,14 +341,21 @@ if st.session_state.get('authentication_status'):
         df_display = df_display[cols]
 
         df_display["Relatório de Reparo"] = df_filtered["LINK RELATORIO"].apply(
-            lambda x: f'<a href="{x}" download="{x.split("/")[-1]}">{x.split("/")[-1]}</a>' 
-            if pd.notna(x) and x != "" else ""
+            lambda x: (
+                f'<a href="{x}" target="_blank" style="text-decoration:none;">'
+                f'<button style="background-color:#2E86C1;color:white;border:none;'
+                f'padding:6px 12px;border-radius:8px;cursor:pointer;'
+                f'font-weight:600;font-size:13px;box-shadow:1px 1px 6px rgba(0,0,0,0.2);">'
+                f'📄 Abrir PDF</button></a>'
+            ) if pd.notna(x) and x.strip() != "" else "❌ Sem relatório"
         )
+
 
         # Converter o DataFrame em HTML com escape=False para interpretar HTML
         html_table = df_display.to_html(escape=False, index=False)
 
         st.markdown("### 📄 Relatórios de Reparo")
+        
         st.markdown(html_table, unsafe_allow_html=True)
 
         # Botão de download do CSV
