@@ -131,6 +131,8 @@ if st.session_state.get('authentication_status'):
 
     # Ler Excel diretamente da memória
     df = pd.read_excel(file_content, sheet_name="Reparos Paiva")
+    # Remover espaços da coluna SERIAL
+    df["SERIAL"] = df["SERIAL"].astype(str).str.replace(r"\s+", "", regex=True) 
 
     # =========================
     # Preparar DataFrame
