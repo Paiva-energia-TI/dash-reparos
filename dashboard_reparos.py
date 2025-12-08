@@ -328,46 +328,39 @@ if st.session_state.get('authentication_status'):
     df_filtered["Relatório de Reparo"] = df_filtered["LINK RELATORIO"]
 
     with aba[2]:
-        # Criar uma cópia para exibição
+        st.subheader("📘 Detalhamento dos Reparos")
+
         df_display = df_filtered.copy()
+
+        # Formatando datas
         for col in ["DATA DE CHEGADA", "DATA DE REPARO", "ENTREGA/PREVISÃO"]:
             df_display[col] = df_display[col].dt.strftime("%d/%m/%Y")
 
-        # Remover colunas desnecessárias
-        if "CLIENTE" in df_display.columns:
-            df_display = df_display.drop(columns=["CLIENTE", "BM", "VALOR","LINK RELATORIO"])
+        # Criar coluna SOMENTE com o botão, mas escondendo a URL
+        df_display["Relatório"] = df_display["LINK RELATORIO"]
 
-        # Reorganizar colunas
-        cols = [c for c in df_display.columns if c not in ["DATA DE REPARO", "ENTREGA/PREVISÃO"]]
-        cols += ["DATA DE REPARO", "ENTREGA/PREVISÃO"]
-        df_display = df_display[cols]
+        # 🔥 Criar versão FINAL da tabela sem a URL
+        df_final = df_display.drop(columns=["LINK RELATORIO"])
 
-        df_display["Relatório de Reparo"] = df_filtered["LINK RELATORIO"].apply(
-            lambda x: (
-                f'<a href="{x}" target="_blank" style="text-decoration:none;">'
-                f'<button style="background-color:#2E86C1;color:white;border:none;'
-                f'padding:6px 12px;border-radius:8px;cursor:pointer;'
-                f'font-weight:600;font-size:13px;box-shadow:1px 1px 6px rgba(0,0,0,0.2);">'
-                f'📄 Abrir PDF</button></a>'
-            ) if pd.notna(x) and x.strip() != "" else "❌ Sem relatório"
+        # Exibir tabela com botão clicável
+        st.data_editor(
+            df_final,
+            use_container_width=True,
+            column_config={
+                "Relatório": st.column_config.LinkColumn(
+                    "Relatório de Reparo",
+                    display_text="🔗 Abrir"
+                )
+            },
+            hide_index=True
         )
 
 
-        # Converter o DataFrame em HTML com escape=False para interpretar HTML
-        html_table = df_display.to_html(escape=False, index=False)
-
-        st.markdown("### 📄 Relatórios de Reparo")
-        
-        st.markdown(html_table, unsafe_allow_html=True)
-
-        # Botão de download do CSV
         st.download_button(
-            label="📥 Exportar dados filtrados",
-            data=df_filtered.drop(columns=["CLIENTE"]).to_csv(index=False).encode("utf-8"),
-            file_name="reparos_filtrados.csv",
-            mime="text/csv"
-        )
-
+        "Baixar CSV",
+        df_display.to_csv(index=False).encode("utf-8"),
+        "detalhamento.csv",
+        "text/csv")
 
 
     # ------------------ Financeiro ------------------
