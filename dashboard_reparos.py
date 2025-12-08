@@ -355,14 +355,6 @@ if st.session_state.get('authentication_status'):
             hide_index=True
         )
 
-
-        st.download_button(
-        "Baixar CSV",
-        df_display.to_csv(index=False).encode("utf-8"),
-        "detalhamento.csv",
-        "text/csv")
-
-
     # ------------------ Financeiro ------------------
     with aba[3]:
         st.subheader("💰 Controle Financeiro")
