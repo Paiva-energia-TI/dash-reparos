@@ -184,7 +184,7 @@ if st.session_state.get('authentication_status'):
 
     # 🔹 Filtro de cliente para role PAIVA
     if role_usuario == "PAIVA":
-        todos_clientes = df["CLIENTE"].dropna().unique()
+        todos_clientes = df["CLIENTE"].dropna().unique().tolist()
         todos_clientes.sort()
         cliente_sel = st.sidebar.multiselect(
             "Cliente",
